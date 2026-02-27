@@ -134,3 +134,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# --- Project secrets (do not commit) ---
+cookieclicker-server/secrets/
+cookieclicker-server/secrets/*.json
+cookieclicker-server/.env
+cookieclicker-dashboard-react/.env
