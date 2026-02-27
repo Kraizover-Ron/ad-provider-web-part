@@ -35,11 +35,7 @@ export default function OverviewPage() {
     }
   }
 
-  useEffect(() => {
-    load()
-    const id = setInterval(load, 5000)
-    return () => clearInterval(id)
-  }, [range])
+  useEffect(() => { load() }, [range])
 
   const chartData = useMemo(() => clicks.map(p => ({
     t: p.t,

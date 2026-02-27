@@ -35,11 +35,7 @@ export default function UsersPage() {
     }
   }
 
-  useEffect(() => {
-    load()
-    const id = setInterval(load, 5000)
-    return () => clearInterval(id)
-  }, [])
+  useEffect(() => { load() }, [])
 
   async function loadUserDetails(userId: string, nextRange = range) {
     setDetailsError(null)
@@ -54,12 +50,6 @@ export default function UsersPage() {
       setDetailsError(e?.message || 'Failed to load user details')
     }
   }
-
-  useEffect(() => {
-    if (!expandedUserId) return
-    const id = setInterval(() => loadUserDetails(expandedUserId, range), 5000)
-    return () => clearInterval(id)
-  }, [expandedUserId, range])
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()

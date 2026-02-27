@@ -303,57 +303,34 @@ app.post("/v1/engagement/evaluate", async (req, res) => {
     const wm = typeof windowMs === "number" ? windowMs : WINDOW_MS_DEFAULT;
     const thr = typeof thresholdClicks === "number" ? thresholdClicks : THRESHOLD_CLICKS_DEFAULT;
 
-    // Keep recentClicks pruned to the requested window.
     const existing = await getRecentClicks(userId);
     const { filtered, count } = computeWindowClicks(existing, now, wm);
     await db.ref(`users/${userId}/recentClicks`).set(filtered);
 
-    // IMPORTANT: Evaluation is read-mostly.
-    // Once eligibility is earned, we keep it until TTL expires or an ad is served (cooldown starts).
     const current = await getEligibility(userId, now);
-
     if (current.inCooldown) {
-      return res.json({
-        eligible: false,
-        reason: "cooldown",
-        eligibleUntil: null,
-        cooldownUntil: current.cooldownUntil,
-        score: count,
-        serverTime: now
-      });
+      return res.json({ eligible: false, reason: "cooldown", eligibleUntil: null, cooldownUntil: current.cooldownUntil, score: count, serverTime: now });
     }
 
-    if (current.eligible) {
-      return res.json({
-        eligible: true,
-        reason: current.reason || "eligible",
-        eligibleUntil: current.eligibleUntil,
-        cooldownUntil: current.cooldownUntil,
-        score: count,
-        serverTime: now
-      });
+    const eligible = count >= thr;
+    const reason = eligible ? `threshold_${thr}_in_${wm}ms` : `below_threshold_${thr}_in_${wm}ms`;
+
+    let eligibleUntil = null;
+    let cooldownUntil = current.cooldownUntil;
+
+    if (eligible) {
+      if (current.eligible) {
+        eligibleUntil = current.eligibleUntil;
+      } else {
+        const payload = await setEligible(userId, reason, now);
+        eligibleUntil = payload.eligibleUntil;
+        cooldownUntil = payload.cooldownUntil;
+      }
+    } else if (current.eligible) {
+      await clearEligible(userId, reason, now);
     }
 
-    if (count >= thr) {
-      const payload = await setEligible(userId, `threshold_${thr}_in_${wm}ms`, now);
-      return res.json({
-        eligible: true,
-        reason: payload.reason || null,
-        eligibleUntil: payload.eligibleUntil,
-        cooldownUntil: payload.cooldownUntil,
-        score: count,
-        serverTime: now
-      });
-    }
-
-    return res.json({
-      eligible: false,
-      reason: `below_threshold_${thr}_in_${wm}ms`,
-      eligibleUntil: null,
-      cooldownUntil: current.cooldownUntil,
-      score: count,
-      serverTime: now
-    });
+    res.json({ eligible, reason, eligibleUntil, cooldownUntil, score: count, serverTime: now });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
