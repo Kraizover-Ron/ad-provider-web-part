@@ -8,10 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
+const logRequests = process.env.LOG_REQUESTS === "1";
+if (logRequests) {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
+
 
 const WINDOW_MS_DEFAULT = 10_000;
 const THRESHOLD_CLICKS_DEFAULT = 20;
@@ -303,13 +307,13 @@ app.post("/v1/engagement/evaluate", async (req, res) => {
     const wm = typeof windowMs === "number" ? windowMs : WINDOW_MS_DEFAULT;
     const thr = typeof thresholdClicks === "number" ? thresholdClicks : THRESHOLD_CLICKS_DEFAULT;
 
-    // Keep recentClicks pruned to the requested window.
+    /* Keep recentClicks pruned to the requested window. */
     const existing = await getRecentClicks(userId);
     const { filtered, count } = computeWindowClicks(existing, now, wm);
     await db.ref(`users/${userId}/recentClicks`).set(filtered);
 
-    // IMPORTANT: Evaluation is read-mostly.
-    // Once eligibility is earned, we keep it until TTL expires or an ad is served (cooldown starts).
+    /* IMPORTANT: Evaluation is read-mostly. */
+    /* Once eligibility is earned, we keep it until TTL expires or an ad is served (cooldown starts). */
     const current = await getEligibility(userId, now);
 
     if (current.inCooldown) {
@@ -773,5 +777,7 @@ app.get("/admin/users/:userId/charts/ads", requireAdmin, async (req, res) => {
 
 const port = process.env.PORT || 5000;
 app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on http://localhost:${port}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`Server running on http://localhost:${port}`);
+  }
 });
