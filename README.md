@@ -5,7 +5,7 @@ A small end-to-end project that connects an **Android app** to a **backend API**
 ---
 **Backend API (Render):** https://ad-provider-web-part.onrender.com  
 **Health check:** https://ad-provider-web-part.onrender.com/health
-ש
+
 ## Documentation
 
 The full documentation is in `docs/` and can be published with GitHub Pages.
