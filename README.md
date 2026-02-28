@@ -3,7 +3,9 @@
 A small end-to-end project that connects an **Android app** to a **backend API**, and exposes an **Admin Dashboard** for monitoring users, sessions, clicks, ad eligibility, and ad serving.
 
 ---
-
+**Backend API (Render):** https://ad-provider-web-part.onrender.com  
+**Health check:** https://ad-provider-web-part.onrender.com/health
+ש
 ## Documentation
 
 The full documentation is in `docs/` and can be published with GitHub Pages.
